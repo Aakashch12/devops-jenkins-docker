@@ -45,8 +45,7 @@ sh 'mvn package -DskipTests -q'
 usernameVariable: 'DOCKER_USER',
 passwordVariable: 'DOCKER_TOKEN')]) {
 // Login using token via stdin (more secure)
-sh 'echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --
-password-stdin'
+sh 'echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin'
  sh "docker push ${IMAGE_TAG}"
 sh "docker push ${LATEST_TAG}"
 sh 'docker logout'
