@@ -19,8 +19,8 @@ pipeline {
  stage('Build & Test') {
  steps {
  dir('app') {
- sh 'mvn clean test'
-sh 'mvn package -DskipTests -q'
+ bat 'mvn clean test'
+bat 'mvn package -DskipTests -q'
  }
  }
  post {
@@ -33,8 +33,8 @@ sh 'mvn package -DskipTests -q'
  // ─── Stage 3: Build Docker image ──────────────────────
  stage('Docker Build') {
  steps {
- sh "docker build -t ${IMAGE_TAG} -t ${LATEST_TAG} ."
- sh "docker images | grep devops-jenkins-demo"
+ bat "docker build -t ${IMAGE_TAG} -t ${LATEST_TAG} ."
+ bat "docker images | findstr devops-jenkins-demo"
  }
  }
  // ─── Stage 4: Push to Docker Hub ──────────────────────
@@ -45,19 +45,23 @@ sh 'mvn package -DskipTests -q'
 usernameVariable: 'DOCKER_USER',
 passwordVariable: 'DOCKER_TOKEN')]) {
 // Login using token via stdin (more secure)
-sh 'echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin'
- sh "docker push ${IMAGE_TAG}"
-sh "docker push ${LATEST_TAG}"
-sh 'docker logout'
+bat 'echo %DOCKER_TOKEN% | docker login -u %DOCKER_USER% --password-stdin'
+
+bat "docker push ${IMAGE_TAG}"
+bat "docker push ${LATEST_TAG}"
+
+bat 'docker logout'
  }
  }
  }
  // ─── Stage 5: Run container and verify health ─────────
  stage('Verify Deployment') {
  steps {
- sh "docker run -d --name test-app -p 8080:8080 ${LATEST_TAG}"
- sh 'sleep 10'
- sh '''
+ bat "docker run -d --name test-app -p 8080:8080 ${LATEST_TAG}"
+
+bat 'timeout /t 10'
+
+bat 'curl http://localhost:8080/health'
  RESPONSE=$(curl -sf http://localhost:8080/health)
 echo "Health check response: $RESPONSE"
 echo $RESPONSE | grep -q '"status":"UP"'
@@ -67,7 +71,8 @@ echo "Container health check PASSED!"
  post {
  // Always clean up the test container
  always {
- sh 'docker stop test-app && docker rm test-app || true'
+ bat 'docker stop test-app'
+bat 'docker rm test-app'
  }
  }
  }
