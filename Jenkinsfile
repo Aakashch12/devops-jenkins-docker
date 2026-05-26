@@ -86,25 +86,28 @@ pipeline {
         // Stage 5: Verify Deployment
         // ─────────────────────────────────────────────
         stage('Verify Deployment') {
-            steps {
+    steps {
 
-                bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
+        bat 'docker stop test-app || exit 0'
 
-                bat 'timeout /t 15'
+        bat 'docker rm test-app || exit 0'
 
-                bat 'curl http://localhost:8081/health'
-            }
+        bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
 
-            post {
-                always {
+        bat 'timeout /t 15'
 
-                    bat 'docker stop test-app'
+        bat 'curl http://localhost:8081/health'
+    }
 
-                    bat 'docker rm test-app'
-                }
-            }
+    post {
+        always {
+
+            bat 'docker stop test-app'
+
+            bat 'docker rm test-app'
         }
     }
+}
 
     // ─────────────────────────────────────────────
     // Final Status
