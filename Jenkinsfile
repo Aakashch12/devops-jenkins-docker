@@ -88,11 +88,11 @@ pipeline {
         stage('Verify Deployment') {
             steps {
 
-                bat "docker run -d --name test-app -p 8080:8080 ${LATEST_TAG}"
+                bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
 
                 bat 'timeout /t 15'
 
-                bat 'curl http://localhost:8080/health'
+                bat 'curl http://localhost:8081/health'
             }
 
             post {
