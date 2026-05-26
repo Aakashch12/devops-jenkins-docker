@@ -2,20 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Replace with your Docker Hub username
         IMAGE_NAME = 'aakashchauhan27/devops-jenkins-demo'
-
         IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT[0..6]}"
         LATEST_TAG = "${IMAGE_NAME}:latest"
-
         DOCKERHUB_CRED = 'dockerhub-credentials'
     }
 
     stages {
 
-        // ─────────────────────────────────────────────
-        // Stage 1: Checkout Code
-        // ─────────────────────────────────────────────
         stage('Checkout') {
             steps {
                 checkout scm
@@ -23,9 +17,6 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
-        // Stage 2: Build and Test
-        // ─────────────────────────────────────────────
         stage('Build & Test') {
             steps {
 
@@ -45,9 +36,6 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
-        // Stage 3: Docker Build
-        // ─────────────────────────────────────────────
         stage('Docker Build') {
             steps {
 
@@ -57,9 +45,6 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
-        // Stage 4: Docker Push
-        // ─────────────────────────────────────────────
         stage('Docker Push') {
             steps {
 
@@ -82,36 +67,31 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
-        // Stage 5: Verify Deployment
-        // ─────────────────────────────────────────────
         stage('Verify Deployment') {
-    steps {
+            steps {
 
-        bat 'docker stop test-app || exit 0'
+                bat 'docker stop test-app || exit 0'
 
-        bat 'docker rm test-app || exit 0'
+                bat 'docker rm test-app || exit 0'
 
-        bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
+                bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
 
-        bat 'timeout /t 15'
+                bat 'timeout /t 15'
 
-        bat 'curl http://localhost:8081/health'
-    }
+                bat 'curl http://localhost:8081/health'
+            }
 
-    post {
-        always {
+            post {
+                always {
 
-            bat 'docker stop test-app'
+                    bat 'docker stop test-app'
 
-            bat 'docker rm test-app'
+                    bat 'docker rm test-app'
+                }
+            }
         }
     }
-}
 
-    // ─────────────────────────────────────────────
-    // Final Status
-    // ─────────────────────────────────────────────
     post {
 
         success {
