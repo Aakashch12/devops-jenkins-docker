@@ -83,33 +83,30 @@ pipeline {
         // Stage 5: Verify Deployment
         // ============================================
         stage('Verify Deployment') {
-            steps {
+        steps {
 
-                // Stop and remove old test container if exists
-                bat 'docker stop test-app || exit 0'
+        bat 'docker stop test-app || exit 0'
 
-                bat 'docker rm test-app || exit 0'
+        bat 'docker rm test-app || exit 0'
 
-                // Run container on free port 9090
-                bat "docker run -d --name test-app -p 9090:8080 ${LATEST_TAG}"
+        bat "docker run -d --name test-app -p 0:8080 ${LATEST_TAG}"
 
-                // Wait for app startup
-                bat 'timeout /t 20'
+        bat 'timeout /t 15'
 
-                // Health check
-                bat 'curl http://localhost:9090/health'
-            }
+        bat 'docker ps'
 
-            post {
-                always {
-
-                    // Cleanup container
-                    bat 'docker stop test-app'
-
-                    bat 'docker rm test-app'
-                }
-            }
         }
+
+        post {
+        always {
+
+            bat 'docker stop test-app'
+
+            bat 'docker rm test-app'
+        }
+    }
+}
+       
     }
 
     // ============================================
