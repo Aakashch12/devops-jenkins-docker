@@ -10,6 +10,9 @@ pipeline {
 
     stages {
 
+        // ============================================
+        // Stage 1: Checkout Code
+        // ============================================
         stage('Checkout') {
             steps {
                 checkout scm
@@ -17,6 +20,9 @@ pipeline {
             }
         }
 
+        // ============================================
+        // Stage 2: Build and Test
+        // ============================================
         stage('Build & Test') {
             steps {
 
@@ -36,6 +42,9 @@ pipeline {
             }
         }
 
+        // ============================================
+        // Stage 3: Build Docker Image
+        // ============================================
         stage('Docker Build') {
             steps {
 
@@ -45,6 +54,9 @@ pipeline {
             }
         }
 
+        // ============================================
+        // Stage 4: Push Docker Image
+        // ============================================
         stage('Docker Push') {
             steps {
 
@@ -67,23 +79,31 @@ pipeline {
             }
         }
 
+        // ============================================
+        // Stage 5: Verify Deployment
+        // ============================================
         stage('Verify Deployment') {
             steps {
 
+                // Stop and remove old test container if exists
                 bat 'docker stop test-app || exit 0'
 
                 bat 'docker rm test-app || exit 0'
 
-                bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
+                // Run container on free port 9090
+                bat "docker run -d --name test-app -p 9090:8080 ${LATEST_TAG}"
 
-                bat 'timeout /t 15'
+                // Wait for app startup
+                bat 'timeout /t 20'
 
-                bat 'curl http://localhost:8081/health'
+                // Health check
+                bat 'curl http://localhost:9090/health'
             }
 
             post {
                 always {
 
+                    // Cleanup container
                     bat 'docker stop test-app'
 
                     bat 'docker rm test-app'
@@ -92,16 +112,19 @@ pipeline {
         }
     }
 
+    // ============================================
+    // Final Pipeline Status
+    // ============================================
     post {
 
         success {
 
-            echo 'Pipeline SUCCESS — Docker image pushed successfully!'
+            echo 'Pipeline SUCCESS - Docker image built, pushed, and verified successfully!'
         }
 
         failure {
 
-            echo 'Pipeline FAILED — check logs for details.'
+            echo 'Pipeline FAILED - Check console logs for details.'
         }
     }
 }
