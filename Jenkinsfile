@@ -82,22 +82,21 @@ pipeline {
         // ============================================
         // Stage 5: Verify Deployment
         // ============================================
-        stage('Verify Deployment') {
-        steps {
+         stage('Verify Deployment') {
+    steps {
 
         bat 'docker stop test-app || exit 0'
 
         bat 'docker rm test-app || exit 0'
 
-        bat "docker run -d --name test-app -p 0:8080 ${LATEST_TAG}"
+        bat "docker run -d --name test-app -p 8081:8080 ${LATEST_TAG}"
 
         bat 'timeout /t 15'
 
-        bat 'docker ps'
+        bat 'curl http://localhost:8081/health'
+    }
 
-        }
-
-        post {
+    post {
         always {
 
             bat 'docker stop test-app'
