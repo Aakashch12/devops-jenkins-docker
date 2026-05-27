@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'aakashchauhan27/devops-jenkins-demo'
-        IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT[0..6]}"
-        LATEST_TAG = "${IMAGE_NAME}:latest"
-        DOCKERHUB_CRED = 'dockerhub-credentials'
+        IMAGE_NAME = "aakashchauhan27/devops-jenkins-demo"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        DOCKERHUB_CRED = "dockerhub-credentials"
     }
 
     stages {
@@ -32,7 +31,7 @@ pipeline {
 
                     bat 'mvn clean test'
 
-                    bat 'mvn package -DskipTests -q'
+                    bat 'mvn package -DskipTests'
                 }
             }
 
@@ -45,36 +44,34 @@ pipeline {
         }
 
         // =========================================
-        // Stage 3 : Build Docker Image
+        // Stage 3 : Docker Build
         // =========================================
         stage('Docker Build') {
             steps {
 
-                bat "docker build -t ${IMAGE_TAG} -t ${LATEST_TAG} ."
+                bat "docker build -t %IMAGE_NAME%:%IMAGE_TAG% ."
 
-                bat "docker images | findstr devops-jenkins-demo"
+                bat "docker images"
             }
         }
 
         // =========================================
-        // Stage 4 : Push Docker Image
+        // Stage 4 : Docker Push
         // =========================================
         stage('Docker Push') {
             steps {
 
                 withCredentials([
                     usernamePassword(
-                        credentialsId: "${DOCKERHUB_CRED}",
+                        credentialsId: 'dockerhub-credentials',
                         usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_TOKEN'
+                        passwordVariable: 'DOCKER_PASS'
                     )
                 ]) {
 
-                    bat 'echo %DOCKER_TOKEN% | docker login -u %DOCKER_USER% --password-stdin'
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
 
-                    bat "docker push ${IMAGE_TAG}"
-
-                    bat "docker push ${LATEST_TAG}"
+                    bat "docker push %IMAGE_NAME%:%IMAGE_TAG%"
 
                     bat 'docker logout'
                 }
@@ -88,28 +85,31 @@ pipeline {
             steps {
 
                 // Stop old container if exists
-                bat 'docker stop test-app || exit 0'
+                bat 'docker stop test-app >nul 2>&1 || exit 0'
 
                 // Remove old container if exists
-                bat 'docker rm test-app || exit 0'
+                bat 'docker rm test-app >nul 2>&1 || exit 0'
 
-                // Run container on automatic free port
-                bat "docker run -d --name test-app -p 0:8080 ${LATEST_TAG}"
+                // Run container
+                bat "docker run -d --name test-app -p 9090:8080 %IMAGE_NAME%:%IMAGE_TAG%"
 
-                // Wait for app startup
-                bat 'timeout /t 15'
+                // Wait for application startup
+                bat 'timeout /t 25'
 
                 // Show running containers
                 bat 'docker ps'
+
+                // Verify container is running
+                bat 'docker inspect -f "{{.State.Running}}" test-app'
             }
 
             post {
                 always {
 
-                    // Cleanup
-                    bat 'docker stop test-app || exit 0'
+                    // Cleanup container
+                    bat 'docker stop test-app >nul 2>&1 || exit 0'
 
-                    bat 'docker rm test-app || exit 0'
+                    bat 'docker rm test-app >nul 2>&1 || exit 0'
                 }
             }
         }
